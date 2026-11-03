@@ -1,47 +1,32 @@
+
 import axios from "axios";
-// const BASE_URL = "http://10.0.2.2:4000/"";
-const BASE_URL = "http://172.28.128.1:4000/";
-const BASE_URL_AUTH = `${BASE_URL}auth/`;
 
-async function authenticate(mode, login, password) {
-  const url = `${BASE_URL_AUTH}${mode}`;
+export const BASE_URL = "http://172.28.128.1:4000/";
 
-  const response = await axios.post(url, {
-    username: login,
-    password: password,
-  });
+export const createUser = (userData) => {
+  return axios.post(`${BASE_URL}auth/signup`, userData);
+};
 
-  return response;
-}
+export const loginRequest = (userData) => {
+  return axios.post(`${BASE_URL}auth/login`, userData);
+};
 
-export async function createUser(login, password) {
-  return authenticate("signup", login, password);
-}
-
-export async function login(login, password) {
-  return await authenticate("login", login, password);
-}
-
-export async function getNewToken(token) {
-  const url = `${BASE_URL_AUTH}token`;
-  return await axios.post(url, {
-    token,
-  });
-}
-
-export async function logout(refreshToken) {
-  const url = `${BASE_URL_AUTH}logout`;
-  return await axios.delete(url, {
+export const getNewToken = (refreshToken) => {
+  return axios.post(`${BASE_URL}auth/token`, {
     token: refreshToken,
   });
-}
+};
 
-export async function getPosts(token) {
-  const url = `${BASE_URL}posts`;
-  const result = await axios.get(url, {
+export const logoutRequest = (refreshToken) => {
+  return axios.delete(`${BASE_URL}auth/logout`, {
+    token: refreshToken,
+  });
+};
+
+export const getPosts = (accessToken) => {
+  return axios.get(`${BASE_URL}posts`, {
     headers: {
-      Authorization: `Bearer ${token}`,
+      Authorization: `Bearer ${accessToken}`,
     },
   });
-  return result;
-}
+};

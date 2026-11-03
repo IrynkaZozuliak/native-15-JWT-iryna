@@ -43,15 +43,25 @@ function AuthContent({ isLogin, onAuthenticate }) {
     const passwordIsValid = password.length > 6;
     const passwordsAreEqual = password === confirmPassword;
 
-    if (!loginIsValid || !passwordIsValid || (!isLogin && !passwordsAreEqual)) {
-      Alert.alert("Invalid input", "Please check your entered credentials.");
+    if (
+      !loginIsValid ||
+      !passwordIsValid ||
+      (!isLogin && !passwordsAreEqual)
+    ) {
+      Alert.alert(
+        "Invalid input",
+        "Please check your entered credentials."
+      );
+
       setCredentialsInvalid({
         login: !loginIsValid,
         password: !passwordIsValid,
         confirmPassword: !passwordIsValid || !passwordsAreEqual,
       });
+
       return;
     }
+
     onAuthenticate({ login, password });
   }
 
@@ -62,28 +72,28 @@ function AuthContent({ isLogin, onAuthenticate }) {
     >
       <ScrollView>
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <>
-            <View style={styles.authContent}>
-              <Image
-                style={styles.image}
-                source={
-                  isLogin
-                    ? require(`../../assets/login.png`)
-                    : require(`../../assets/signup.png`)
-                }
-              />
-              <AuthForm
-                isLogin={isLogin}
-                onSubmit={submitHandler}
-                credentialsInvalid={credentialsInvalid}
-              />
-              <View style={styles.buttons}>
-                <FlatButton onPress={switchAuthModeHandler}>
-                  {isLogin ? "Create a new user" : "Log in"}
-                </FlatButton>
-              </View>
+          <View style={styles.authContent}>
+            <Image
+              style={styles.image}
+              source={
+                isLogin
+                  ? require("../../assets/login.png")
+                  : require("../../assets/signup.png")
+              }
+            />
+
+            <AuthForm
+              isLogin={isLogin}
+              onSubmit={submitHandler}
+              credentialsInvalid={credentialsInvalid}
+            />
+
+            <View style={styles.buttons}>
+              <FlatButton onPress={switchAuthModeHandler}>
+                {isLogin ? "Create a new user" : "Log In"}
+              </FlatButton>
             </View>
-          </>
+          </View>
         </TouchableWithoutFeedback>
       </ScrollView>
     </KeyboardAvoidingView>

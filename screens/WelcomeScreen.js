@@ -1,32 +1,106 @@
+
 import { useCallback, useEffect, useState } from "react";
-import { StyleSheet, Text, View, FlatList } from "react-native";
+import {
+  View,
+  Text,
+  FlatList,
+  RefreshControl,
+  StyleSheet,
+} from "react-native";
+import { useDispatch, useSelector } from "react-redux";
 
-import { Colors } from "../utils/styles";
-
-const PostItem = ({ title, description, author }) => (
-  <View style={styles.itemContainer}>
-    <Text style={styles.itemTitle}>{title}</Text>
-    <Text style={styles.itemDescription}>{description}</Text>
-    <Text style={styles.itemAuthor}>By {author}</Text>
-  </View>
-);
+import { authActions } from "../store/authSlice";
+import {
+  getPosts,
+  getNewToken,
+} from "../utils/authDataService";
 
 function WelcomeScreen() {
-  const [fetchedPosts, setFetchedPosts] = useState([]);
+  const dispatch = useDispatch();
+
+  const token = useSelector((state) => state.auth.token);
+  const refreshToken = useSelector(
+    (state) => state.auth.refreshToken
+  );
+
+  const [posts, setPosts] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
 
-  const fetchPosts = () => {};// provide your implementation
+  const fetchPosts = useCallback(async () => {
+    setRefreshing(true);
+
+    try {
+      let response;
+
+      try {
+        // Запит постів із поточним access token.
+        response = await getPosts(token);
+      } catch (error) {
+        // Якщо access token недійсний або прострочений,
+        // отримуємо новий за допомогою refresh token.
+        if (error.response?.status !== 403 || !refreshToken) {
+          throw error;
+        }
+
+        const tokenResponse = await getNewToken(refreshToken);
+        const newToken = tokenResponse.data.accessToken;
+
+        // Оновлюємо access token у Redux.
+        dispatch(authActions.updateToken(newToken));
+
+        // Повторюємо запит постів із новим токеном.
+        response = await getPosts(newToken);
+      }
+
+      setPosts(response.data);
+    } catch (error) {
+      // У разі помилки залишаємо поточний список постів.
+    } finally {
+      setRefreshing(false);
+    }
+  }, [token, refreshToken, dispatch]);
+
+  useEffect(() => {
+    // Автоматично завантажуємо пости лише при відкритті екрана.
+    fetchPosts();
+
+    // Не запускаємо повторний запит після оновлення токена.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function renderPostItem(itemData) {
+    return (
+      <View style={styles.postItem}>
+        <Text style={styles.postTitle}>
+          {itemData.item.title}
+        </Text>
+
+        <Text style={styles.postBody}>
+          {itemData.item.body}
+        </Text>
+      </View>
+    );
+  }
 
   return (
-    <View style={styles.rootContainer}>
+    <View style={styles.container}>
+      <Text style={styles.heading}>Welcome!</Text>
+
       <FlatList
-        onRefresh={fetchPosts}
         testID="Posts"
+        data={posts}
+        keyExtractor={(item, index) =>
+          item.id?.toString() ?? index.toString()
+        }
+        renderItem={renderPostItem}
+        onRefresh={fetchPosts}
         refreshing={refreshing}
-        data={fetchedPosts}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => <PostItem {...item} />}
-        contentContainerStyle={styles.listContainer}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={fetchPosts}
+          />
+        }
       />
     </View>
   );
@@ -35,40 +109,27 @@ function WelcomeScreen() {
 export default WelcomeScreen;
 
 const styles = StyleSheet.create({
-  rootContainer: {
+  container: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
     padding: 16,
   },
-  listContainer: {
-    padding: 10,
+  heading: {
+    fontSize: 24,
+    fontWeight: "bold",
+    marginBottom: 16,
   },
-  itemContainer: {
-    backgroundColor: Colors.primary800,
-    borderRadius: 16,
-    padding: 20,
-    marginVertical: 8,
-    marginHorizontal: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+  postItem: {
+    padding: 16,
+    marginBottom: 12,
+    borderRadius: 8,
+    backgroundColor: "#eeeeee",
   },
-  itemTitle: {
+  postTitle: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "white",
+    marginBottom: 8,
   },
-  itemDescription: {
+  postBody: {
     fontSize: 14,
-    color: "white",
-    marginTop: 5,
-  },
-  itemAuthor: {
-    fontSize: 12,
-    color: Colors.primary100,
-    marginTop: 5,
   },
 });
